@@ -2,6 +2,9 @@
 
 A self-hosted web app that generates complete, styled websites from a text prompt using AI. Describe what you want, and get a live-previewable HTML page in seconds.
 
+<img width="761" height="770" alt="Screenshot 2026-07-27 at 9 02 49 PM" src="https://github.com/user-attachments/assets/cb4068b0-5cfb-4c69-900a-ce2a2f9551f7" />
+
+
 ## Features
 
 - **Prompt-to-site** — Describe a website in plain English and get a full HTML/CSS page
