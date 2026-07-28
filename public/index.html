@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Website Builder</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #64748b; margin-bottom: 2rem; font-size: 0.95rem; }
+    .prompt-area { position: relative; margin-bottom: 1.5rem; }
+    textarea { width: 100%; min-height: 140px; padding: 1rem; border: 1px solid #1e293b; border-radius: 12px; background: #1e293b; color: #e2e8f0; font-size: 1rem; font-family: inherit; resize: vertical; outline: none; transition: border-color 0.2s; }
+    textarea:focus { border-color: #38bdf8; }
+    textarea::placeholder { color: #475569; }
+    .actions { display: flex; gap: 1rem; align-items: center; }
+    button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: linear-gradient(135deg, #38bdf8, #818cf8); color: #0f172a; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; }
+    .status { color: #64748b; font-size: 0.85rem; }
+    .status.error { color: #f87171; }
+    .status.success { color: #4ade80; }
+    .preview-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #34d399, #38bdf8); color: #0f172a; font-weight: 600; border-radius: 8px; text-decoration: none; margin-top: 1.5rem; transition: opacity 0.2s; }
+    .preview-link:hover { opacity: 0.85; }
+    .history { margin-top: 2rem; }
+    .history h3 { font-size: 1rem; color: #94a3b8; margin-bottom: 0.75rem; }
+    .history-item { padding: 0.75rem 1rem; background: #1e293b; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.9rem; color: #cbd5e1; border-left: 3px solid #38bdf8; }
+    .preview-label { font-size: 0.85rem; color: #64748b; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Website Builder</h1>
+    <p class="subtitle">Describe the website you want, and AI will build it.</p>
+    
+    <div class="prompt-area">
+      <textarea id="prompt" placeholder="e.g. A modern landing page for a coffee shop with a hero image, menu section, and contact form..."></textarea>
+    </div>
+    
+    <div class="actions">
+      <button class="btn-primary" id="generateBtn" onclick="generate()">Generate Website</button>
+      <span class="status" id="status"></span>
+    </div>
+
+    <div id="previewSection" style="display:none;">
+      <a id="previewLink" class="preview-link" href="#" target="_blank">Open Preview in New Tab</a>
+    </div>
+
+    <div id="historySection" class="history" style="display:none;">
+      <h3>Prompt History</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <script>
+    const promptEl = document.getElementById('prompt');
+    const statusEl = document.getElementById('status');
+    const generateBtn = document.getElementById('generateBtn');
+
+    promptEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generate();
+    });
+
+    async function generate() {
+      const prompt = promptEl.value.trim();
+      if (!prompt) return;
+
+      generateBtn.disabled = true;
+      statusEl.textContent = 'Generating... this may take 10-30 seconds.';
+      statusEl.className = 'status';
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+        document.getElementById('previewSection').style.display = 'block';
+        document.getElementById('previewLink').href = data.previewUrl;
+
+        statusEl.textContent = 'Website generated! Edit the prompt above and generate again to make changes.';
+        statusEl.className = 'status success';
+
+        loadHistory();
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+        statusEl.className = 'status error';
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/history');
+        const history = await res.json();
+        if (history.length === 0) return;
+
+        document.getElementById('historySection').style.display = 'block';
+        document.getElementById('historyList').innerHTML = history
+          .map(h => `<div class="history-item">${escapeHtml(h.prompt)}</div>`)
+          .reverse()
+          .join('');
+      } catch (e) {}
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

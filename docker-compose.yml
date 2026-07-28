@@ -1,0 +1,15 @@
+services:
+  ai-website-builder:
+    build: .
+    container_name: ai-website-builder
+    restart: unless-stopped
+    ports:
+      - "40033:3000"
+      - "40035:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/site
+    environment:
+      - TZ=America/New_York
+      - PREVIEW_EXTERNAL_PORT=40035
